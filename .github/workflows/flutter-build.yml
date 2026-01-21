@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
 
-  build-for-windows-flutter:
+build-for-windows-flutter:
     name: ${{ matrix.job.target }}
     needs: [build-RustDeskTempTopMostWindow, generate-bridge]
     runs-on: ${{ matrix.job.os }}
@@ -92,6 +92,16 @@ jobs:
         with:
           submodules: recursive
 
+      # --- بداية تعديل Adaa.store ---
+      - name: Inject Adaa Config
+        shell: bash
+        run: |
+          # استبدال الدومين بالآي بي الخاص بك
+          sed -i 's|rs-ny.rustdesk.com|31.6.50.93|g' libs/hbb_common/src/config.rs
+          # استبدال المفتاح الافتراضي بمفتاحك
+          sed -i 's|OeVuKk5n1HiXp+APNn0Y3pC1Iwppm44JGqrQCsWqmBw=|lQyeQY9+vZBJWTMkXke0QgqhXo8BeshSilbhuLk0QDE=|g' libs/hbb_common/src/config.rs
+      # --- نهاية تعديل Adaa.store ---
+
       - name: Restore bridge files
         uses: actions/download-artifact@master
         with:
@@ -116,7 +126,7 @@ jobs:
           flutter precache --windows
           Invoke-WebRequest -Uri https://github.com/rustdesk/engine/releases/download/main/windows-x64-release.zip -OutFile windows-x64-release.zip
           Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
-          mv -Force windows-x64-release/*  C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
+          mv -Force windows-x64-release/* C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
 
       - name: Patch flutter
         shell: bash
@@ -232,7 +242,6 @@ jobs:
         with:
           name: rustdesk-unsigned-windows-${{ matrix.job.arch }}
           path: rustdesk
-
       - name: Sign rustdesk files
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: bash
