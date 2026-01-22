@@ -74,14 +74,19 @@ jobs:
         with:
           submodules: recursive
 
-      # --- بداية تعديل Adaa.store ---
-      - name: Inject Adaa Config
+      # --- بداية تعديل Adaa.store (IP + Key + Green Theme) ---
+      - name: Inject Adaa Config & Theme
         shell: bash
         run: |
-          # استبدال الدومين بالآي بي الخاص بك
+          # 1. IP Configuration
           sed -i 's|rs-ny.rustdesk.com|31.6.50.93|g' libs/hbb_common/src/config.rs
-          # استبدال المفتاح الافتراضي بمفتاحك
+          # 2. Key Configuration
           sed -i 's|OeVuKk5n1HiXp+APNn0Y3pC1Iwppm44JGqrQCsWqmBw=|lQyeQY9+vZBJWTMkXke0QgqhXo8BeshSilbhuLk0QDE=|g' libs/hbb_common/src/config.rs
+          
+          # 3. Theme Injection (Green Color #508D4E -> 0xFF508D4E)
+          # نبحث عن اللون الأزرق الافتراضي ونستبدله باللون الأخضر الخاص بك في ملفات Flutter
+          find flutter/lib -name "*.dart" -print0 | xargs -0 sed -i 's/0xFF2196F3/0xFF508D4E/g'
+          find flutter/lib -name "*.dart" -print0 | xargs -0 sed -i 's/Colors.blue/Color(0xFF508D4E)/g'
       # --- نهاية تعديل Adaa.store ---
 
       - name: Restore bridge files
