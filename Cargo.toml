@@ -1,10 +1,10 @@
 [package]
-name = "rustdesk"
+name = "rustdesk" 
 version = "1.4.5"
-authors = ["rustdesk <info@rustdesk.com>"]
+authors = ["Adaa.store <support@adaa.store>"]
 edition = "2021"
 build= "build.rs"
-description = "RustDesk Remote Desktop"
+description = "Adaa Client - Professional Performance Engineering"
 default-run = "rustdesk"
 rust-version = "1.75"
 
@@ -41,8 +41,6 @@ unix-file-copy-paste = [
     "clipboard/unix-file-copy-paste",
 ]
 screencapturekit = ["cpal/screencapturekit"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 async-trait = "0.1"
@@ -85,7 +83,6 @@ kcp-sys= { git = "https://github.com/rustdesk-org/kcp-sys"}
 reqwest = { version = "0.12", features = ["blocking", "socks", "json", "native-tls", "rustls-tls", "rustls-tls-native-roots", "gzip"], default-features=false }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
-# https://github.com/rustdesk/rustdesk/discussions/10197, not use cpal on linux
 cpal = { git = "https://github.com/rustdesk-org/cpal", branch = "osx-screencapturekit" }
 ringbuf = "0.3"
 
@@ -96,46 +93,15 @@ sys-locale = "0.3"
 enigo = { path = "libs/enigo", features = [ "with_serde" ] }
 clipboard = { path = "libs/clipboard" }
 ctrlc = "3.2"
-# arboard = { version = "3.4", features = ["wayland-data-control"] }
 arboard = { git = "https://github.com/rustdesk-org/arboard", features = ["wayland-data-control"] }
 clipboard-master = { git = "https://github.com/rustdesk-org/clipboard-master" }
 portable-pty = { git = "https://github.com/rustdesk-org/wezterm", branch = "rustdesk/pty_based_0.8.1", package = "portable-pty" }
-
 system_shutdown = "4.0"
 qrcode-generator = "4.1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-winapi = { version = "0.3", features = [
-    "winuser",
-    "wincrypt",
-    "shellscalingapi",
-    "pdh",
-    "synchapi",
-    "memoryapi",
-    "shellapi",
-    "devguid",
-    "setupapi",
-    "cguid",
-    "cfgmgr32",
-    "ioapiset",
-    "winspool",
-] }
-windows = { version = "0.61", features = [
-    "Win32",
-    "Win32_Foundation",
-    "Win32_Security",
-    "Win32_Security_Authorization",
-    "Win32_Storage_FileSystem",
-    "Win32_System",
-    "Win32_System_Diagnostics",
-    "Win32_System_Diagnostics_ToolHelp",
-    "Win32_System_Environment",
-    "Win32_System_IO",
-    "Win32_System_Memory",
-    "Win32_System_Pipes",
-    "Win32_System_Threading",
-    "Win32_UI_Shell",
-] }
+winapi = { version = "0.3", features = ["winuser", "wincrypt", "shellscalingapi", "pdh", "synchapi", "memoryapi", "shellapi", "devguid", "setupapi", "cguid", "cfgmgr32", "ioapiset", "winspool"] }
+windows = { version = "0.61", features = ["Win32", "Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System", "Win32_System_Diagnostics", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Environment", "Win32_System_IO", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_Threading", "Win32_UI_Shell"] }
 winreg = "0.11"
 windows-service = "0.6"
 virtual_display = { path = "libs/virtual_display" }
@@ -154,7 +120,6 @@ core-graphics = "0.22"
 include_dir = "0.7"
 fruitbasket = "0.10"
 objc_id = "0.1"
-# If we use piet "0.7" here, we must also update core-graphics to "0.24".
 piet = "0.6"
 piet-coregraphics = "0.6"
 foreign-types = "0.3"
@@ -207,16 +172,14 @@ android-wakelock = { git = "https://github.com/rustdesk-org/android-wakelock" }
 members = ["libs/scrap", "libs/hbb_common", "libs/enigo", "libs/clipboard", "libs/virtual_display", "libs/virtual_display/dylib", "libs/portable", "libs/remote_printer"]
 exclude = ["vdi/host", "examples/custom_plugin"]
 
-# Patch libxdo-sys to use a stub implementation that doesn't require libxdo
-# This allows building and running on systems without libxdo installed (e.g., Wayland-only)
 [patch.crates-io]
 libxdo-sys = { path = "libs/libxdo-sys-stub" }
 
 [package.metadata.winres]
-LegalCopyright = "Copyright © 2025 Purslane Ltd. All rights reserved."
-ProductName = "RustDesk"
-FileDescription = "RustDesk Remote Desktop"
-OriginalFilename = "rustdesk.exe"
+LegalCopyright = "Copyright © 2026 Adaa.store. All rights reserved."
+ProductName = "Adaa.store"
+FileDescription = "Adaa Client - Professional Optimization"
+OriginalFilename = "adaa-client.exe"
 
 [target.'cfg(target_os="windows")'.build-dependencies]
 winres = "0.1"
@@ -232,16 +195,14 @@ hound = "3.5"
 docopt = "1.1"
 
 [package.metadata.bundle]
-name = "RustDesk"
-identifier = "com.carriez.rustdesk"
+name = "AdaaClient"
+identifier = "store.adaa.client"
 icon = ["res/32x32.png", "res/128x128.png", "res/128x128@2x.png"]
 osx_minimum_system_version = "10.14"
 
-#https://github.com/johnthagen/min-sized-rust
 [profile.release]
 lto = true
 codegen-units = 1
 panic = 'abort'
 strip = true
-#opt-level = 'z' # only have smaller size after strip
 rpath = true
