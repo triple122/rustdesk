@@ -74,7 +74,7 @@ jobs:
         with:
           submodules: recursive
 
-      # --- بداية تعديل Adaa.store (BRANDING INJECTION) ---
+      # --- بداية تعديل Adaa.store (Branding Injection) ---
       - name: Inject Adaa Branding & Config
         shell: bash
         run: |
@@ -84,16 +84,13 @@ jobs:
           sed -i 's|rs-ny.rustdesk.com|31.6.50.93|g' libs/hbb_common/src/config.rs
           sed -i 's|OeVuKk5n1HiXp+APNn0Y3pC1Iwppm44JGqrQCsWqmBw=|lQyeQY9+vZBJWTMkXke0QgqhXo8BeshSilbhuLk0QDE=|g' libs/hbb_common/src/config.rs
           
-          # 2. Force Icon Update (Copy res/icon.ico to Flutter Runner)
-          # هذا السطر يجبر الويندوز على استخدام أيقونتك
+          # 2. Force Icon Update (مهم جداً: نسخ الأيقونة لمجلدات Flutter)
+          # هذا السطر يضمن أن الأيقونة في شريط العنوان تتغير
           cp res/icon.ico flutter/windows/runner/resources/app_icon.ico
           
-          # 3. Force App Name Update (Windows Title)
-          # تغيير الاسم في ملفات C++ الخاصة بـ Flutter
+          # 3. Force App Name Update
           sed -i 's|window.Create(L"RustDesk",|window.Create(L"Adaa.store",|g' flutter/windows/runner/main.cpp
           sed -i 's|SimpleWrapper<String>("RustDesk")|SimpleWrapper<String>("Adaa.store")|g' flutter/lib/common.dart
-          
-          # 4. Update Pubspec Name (Internal Package Name)
           sed -i 's|name: rustdesk|name: adaa_client|g' flutter/pubspec.yaml
           sed -i 's|description: A remote desktop software.|description: Adaa Professional Client|g' flutter/pubspec.yaml
 
@@ -175,7 +172,7 @@ jobs:
           python3 .\build.py --portable --hwcodec --flutter --vram --skip-portable-pack
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
           
-          # Rename Executable to Adaa-Client
+          # Rename Executable to match branding (Inside the folder)
           mv ./rustdesk/rustdesk.exe ./rustdesk/Adaa-Client.exe
 
           Invoke-WebRequest -Uri https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip -OutFile usbmmidd_v2.zip
@@ -188,25 +185,22 @@ jobs:
             Invoke-WebRequest -Uri https://github.com/rustdesk/hbb_common/releases/download/driver/rustdesk_printer_driver_v4-1.4.zip -OutFile rustdesk_printer_driver_v4-1.4.zip
             Invoke-WebRequest -Uri https://github.com/rustdesk/hbb_common/releases/download/driver/printer_driver_adapter.zip -OutFile printer_driver_adapter.zip
             Invoke-WebRequest -Uri https://github.com/rustdesk/hbb_common/releases/download/driver/sha256sums -OutFile sha256sums
-
+            
             $checksum_driver = (Select-String -Path .\sha256sums -Pattern '^([a-fA-F0-9]{64}) \*rustdesk_printer_driver_v4-1.4\.zip$').Matches.Groups[1].Value
             $downloadsum_driver = Get-FileHash -Path rustdesk_printer_driver_v4-1.4.zip -Algorithm SHA256
             $checksum_adapter = (Select-String -Path .\sha256sums -Pattern '^([a-fA-F0-9]{64}) \*printer_driver_adapter\.zip$').Matches.Groups[1].Value
             $downloadsum_adapter = Get-FileHash -Path printer_driver_adapter.zip -Algorithm SHA256
+            
             if ($checksum_driver -eq $downloadsum_driver.Hash -and $checksum_adapter -eq $downloadsum_adapter.Hash) {
-                Write-Output "rustdesk_printer_driver_v4-1.4, checksums match, extract the file."
+                Write-Output "driver checksums match"
                 Expand-Archive rustdesk_printer_driver_v4-1.4.zip -DestinationPath .
                 mkdir ./rustdesk/drivers
                 mv -Force .\rustdesk_printer_driver_v4-1.4 ./rustdesk/drivers/RustDeskPrinterDriver
                 Expand-Archive printer_driver_adapter.zip -DestinationPath .
                 mv -Force .\printer_driver_adapter.dll ./rustdesk
-            } elseif ($checksum_driver -ne $downloadsum_driver.Hash) {
-                Write-Output "rustdesk_printer_driver_v4-1.4, checksums do not match, ignore the file."
-            } else {
-                Write-Output "printer_driver_adapter.dll, checksums do not match, ignore the file."
             }
           } catch {
-              Write-Host "Ingore the printer driver error."
+              Write-Host "Ignore printer driver error."
           }
 
       - name: find Runner.res
@@ -219,8 +213,6 @@ jobs:
           else
             echo "Runner.res: $runner_res";
             cp $runner_res ./libs/portable/Runner.res;
-            echo "list ./libs/portable/Runner.res";
-            ls -l ./libs/portable/Runner.res;
           fi
 
       - name: Download RustDeskTempTopMostWindow artifacts
@@ -230,15 +222,30 @@ jobs:
           name: topmostwindow-artifacts
           path: "./rustdesk"
 
-      - name: Upload unsigned
+      # --- هنا التغيير الجذري للملف الواحد ---
+      # 1. بناء الملف القابل للتثبيت/التشغيل الذاتي (Portable EXE)
+      - name: Build self-extracted executable (Single File)
+        shell: bash
+        if: env.UPLOAD_ARTIFACT == 'true'
+        run: |
+          sed -i '/dpiAware/d' res/manifest.xml
+          pushd ./libs/portable
+          pip3 install -r requirements.txt
+          # نستخدم Adaa-Client.exe كمصدر
+          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Client.exe
+          popd
+          mkdir -p ./SignOutput
+          # إعادة تسمية الملف الناتج ليكون جاهزاً للنشر
+          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Adaa-Client-Portable.exe
+
+      # 2. رفع الملف الواحد فقط بدلاً من المجلد الكامل
+      - name: Upload Single Executable
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@master
         with:
-          name: adaa-client-windows-${{ matrix.job.arch }}
-          path: rustdesk
+          name: Adaa-Client-Portable
+          path: ./SignOutput/Adaa-Client-Portable.exe
 
-      # Skipped signing to keep it simple, proceed to packaging
-      
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         if: env.UPLOAD_ARTIFACT == 'true'
@@ -246,8 +253,6 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./rustdesk/Adaa-Client.exe
+            ./SignOutput/Adaa-Client-Portable.exe
 
-  # ... (باقي الوظائف للأنظمة الأخرى تبقى كما هي) ... 
-  # لتقليل حجم الكود هنا، ركزت فقط على وظيفة الويندوز التي تهمك. 
-  # إذا كنت تحتاج باقي الملف (للماك واللينكس)، أخبرني، لكن هذا الجزء كافٍ تماماً لإنتاج نسخة الويندوز.
+  # ... (بقية الملف للأنظمة الأخرى إذا كانت موجودة، أو احذفها إذا كنت تريد ويندوز فقط) ...
