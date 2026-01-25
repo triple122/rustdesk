@@ -111,6 +111,13 @@ Future<void> main(List<String> args) async {
   } else {
     desktopType = DesktopType.main;
     await windowManager.ensureInitialized();
+    if (kIsClientMode) {
+      windowManager.setSize(const Size(360, 600));
+      windowManager.setMinimumSize(const Size(360, 500));
+    } else {
+      windowManager.setSize(const Size(400, 600));
+      windowManager.setMinimumSize(const Size(350, 500));
+    }
     windowManager.setPreventClose(true);
     if (isMacOS) {
       disableWindowMovable(kWindowId);
@@ -173,6 +180,9 @@ void runMainApp(bool startService) async {
     windowManager.setOpacity(1);
     windowManager.setTitle(getWindowName());
     // Do not use `windowManager.setResizable()` here.
+    if (kIsClientMode) {
+      bind.setIncomingOnly(true);
+    }
     setResizable(!bind.isIncomingOnly());
   });
 }
