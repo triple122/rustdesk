@@ -243,7 +243,7 @@ jobs:
           cargo build --release --bin rustdesk-portable-packer
           
           Write-Host "--- Moving Full Version ---"
-          $exePath = Get-ChildItem -Path ./target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
+          $exePath = Get-ChildItem -Path ../../target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
           if ($exePath) {
               Write-Host "Found packer at: $exePath"
               Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Full-Portable.exe -Force
@@ -272,7 +272,7 @@ jobs:
           cargo build --release --bin rustdesk-portable-packer
           
           Write-Host "--- Moving Client Version ---"
-          $exePath = Get-ChildItem -Path ./target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
+          $exePath = Get-ChildItem -Path ../../target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
           if ($exePath) {
               Write-Host "Found packer at: $exePath"
               Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Client-Portable.exe -Force
