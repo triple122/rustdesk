@@ -90,8 +90,7 @@ jobs:
           
           # 3. Force App Name Update
 
-          sed -i 's|name: rustdesk|name: adaa_client|g' flutter/pubspec.yaml
-          sed -i 's|description: A remote desktop software.|description: Adaa Professional Client|g' flutter/pubspec.yaml
+
 
           echo "Injection Completed Successfully!"
       # --- نهاية تعديل Adaa.store ---
