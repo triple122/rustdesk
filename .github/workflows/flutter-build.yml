@@ -223,33 +223,64 @@ jobs:
       # --- هنا التغيير الجذري للملف الواحد ---
       # 1. بناء الملف القابل للتثبيت/التشغيل الذاتي (Portable EXE)
       - name: Build self-extracted executable (Single File)
-        shell: bash
+        shell: powershell
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
-          sed -i '/dpiAware/d' res/manifest.xml
-          pushd ./libs/portable
-          pip3 install -r requirements.txt
-          # نستخدم Adaa-Client.exe كمصدر
-          # 1. Build Full Portable
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Full.exe
-          cargo build --release --bin rustdesk-portable-packer
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Adaa-Full-Portable.exe
+          # Ensure output directory exists
+          New-Item -ItemType Directory -Force -Path ./SignOutput
 
-          # 2. Build Client Portable
-          # Re-build flutter with client mode
-          popd
-          pushd flutter
-          flutter build windows --release --dart-define=IS_CLIENT_MODE=true
-          popd
+          # Fix manifest (remove dpiAware)
+          (Get-Content res/manifest.xml) -notmatch 'dpiAware' | Set-Content res/manifest.xml
+
+          Push-Location ./libs/portable
+          pip3 install -r requirements.txt
           
-          # Copy new flutter build to rustdesk folder
-          cp flutter/build/windows/x64/runner/Release/adaa_client.exe rustdesk/Adaa-Client.exe
+          # --- 1. Build Full Portable ---
+          Write-Host "--- Generating Full Version Assets ---"
+          python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Full.exe
           
-          pushd ./libs/portable
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Client.exe
+          Write-Host "--- Building Packer (Full) ---"
           cargo build --release --bin rustdesk-portable-packer
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/Adaa-Client-Portable.exe
-          popd
+          
+          Write-Host "--- Moving Full Version ---"
+          $exePath = Get-ChildItem -Path ./target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
+          if ($exePath) {
+              Write-Host "Found packer at: $exePath"
+              Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Full-Portable.exe -Force
+          } else {
+              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe for Full build!"
+              exit 1
+          }
+
+          # --- 2. Build Client Portable ---
+          Pop-Location
+          Push-Location flutter
+          
+          Write-Host "--- Re-building Flutter (Client Mode) ---"
+          flutter build windows --release --dart-define=IS_CLIENT_MODE=true
+          Pop-Location
+          
+          Copy-Item flutter/build/windows/x64/runner/Release/adaa_client.exe -Destination rustdesk/Adaa-Client.exe
+          
+          Push-Location ./libs/portable
+          Write-Host "--- Generating Client Version Assets ---"
+          python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Client.exe
+          
+          Write-Host "--- Building Packer (Client) ---"
+          # Clean previous build to ensure new data.bin is embedded
+          cargo clean -p rustdesk-portable-packer
+          cargo build --release --bin rustdesk-portable-packer
+          
+          Write-Host "--- Moving Client Version ---"
+          $exePath = Get-ChildItem -Path ./target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
+          if ($exePath) {
+              Write-Host "Found packer at: $exePath"
+              Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Client-Portable.exe -Force
+          } else {
+              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe for Client build!"
+              exit 1
+          }
+          Pop-Location
 
       # 2. رفع الملف الواحد فقط بدلاً من المجلد الكامل
       - name: Upload Single Executable
