@@ -684,3 +684,22 @@ extension WindowsTargetExt on int {
 }
 
 const kCheckSoftwareUpdateFinish = 'check_software_update_finish';
+
+WindowsTarget getWindowsTarget(int buildNumber) {
+  if (buildNumber >= 22000) {
+    return WindowsTarget.w11;
+  } else if (buildNumber >= 10240) {
+    return WindowsTarget.w10;
+  } else if (buildNumber >= 9600) {
+    return WindowsTarget.w8_1;
+  } else if (buildNumber >= 9200) {
+    return WindowsTarget.w8;
+  } else if (buildNumber >= 7600) {
+    return WindowsTarget.w7;
+  } else if (buildNumber >= 6000) {
+    return WindowsTarget.vista;
+  } else if (buildNumber >= 2600) {
+    return WindowsTarget.xp;
+  }
+  return WindowsTarget.naw;
+}
