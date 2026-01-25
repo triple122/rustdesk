@@ -180,9 +180,7 @@ void runMainApp(bool startService) async {
     windowManager.setOpacity(1);
     windowManager.setTitle(getWindowName());
     // Do not use `windowManager.setResizable()` here.
-    if (kIsClientMode) {
-      bind.setIncomingOnly(true);
-    }
+
     setResizable(!bind.isIncomingOnly());
   });
 }
