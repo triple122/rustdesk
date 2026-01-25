@@ -228,6 +228,7 @@ jobs:
         run: |
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
+          cargo build --release --bin rustdesk-portable-packer
           pip3 install -r requirements.txt
           # نستخدم Adaa-Client.exe كمصدر
           # 1. Build Full Portable
