@@ -226,64 +226,63 @@ jobs:
         shell: powershell
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
-          # Ensure output directories exist
+          # --- Setup Output Directory ---
           New-Item -ItemType Directory -Force -Path ./SignOutput
-          New-Item -ItemType Directory -Force -Path ./FORCE_OUTPUT
-          $AbsForceOutput = (Resolve-Path ./FORCE_OUTPUT).Path
-
-          # Fix manifest (remove dpiAware)
           (Get-Content res/manifest.xml) -notmatch 'dpiAware' | Set-Content res/manifest.xml
 
           Push-Location ./libs/portable
           pip3 install -r requirements.txt
-          
-          # --- 1. Build Full Portable ---
-          Write-Host "--- Generating Full Version Assets ---"
+
+          # ==========================================
+          # PHASE 1: BUILD ADAA FULL (ADMIN)
+          # ==========================================
+          Write-Host "--- [1/2] Generating Adaa-Full Assets ---"
           python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Full.exe
-          
-          Write-Host "--- Building Packer (Full) ---"
-          # Force output to workspace root/FORCE_OUTPUT
-          cargo build --release --bin rustdesk-portable-packer --target-dir $AbsForceOutput
-          
-          Write-Host "--- Moving Full Version ---"
-          $sourcePath = Join-Path $AbsForceOutput "release/rustdesk-portable-packer.exe"
-          
-          if (Test-Path $sourcePath) {
-              Write-Host "Found packer at: $sourcePath"
-              Move-Item -Path $sourcePath -Destination ../../SignOutput/Adaa-Full-Portable.exe -Force
+
+          Write-Host "--- Building Packer for Adaa-Full ---"
+          Remove-Item -Path ./FORCE_BUILD -Recurse -ErrorAction SilentlyContinue
+          cargo build --release --bin rustdesk-portable-packer --target-dir ./FORCE_BUILD
+
+          $fullPath = "./FORCE_BUILD/release/rustdesk-portable-packer.exe"
+          if (Test-Path $fullPath) {
+              Write-Host "SUCCESS: Found Full Build at $fullPath"
+              Move-Item -Path $fullPath -Destination ../../SignOutput/Adaa-Full-Portable.exe -Force
           } else {
-              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe at $sourcePath"
-              Get-ChildItem -Path $AbsForceOutput -Recurse
+              Write-Error "CRITICAL: Adaa-Full build failed to appear in FORCE_BUILD"
               exit 1
           }
 
-          # --- 2. Build Client Portable ---
-          Pop-Location
-          Push-Location flutter
+          # ==========================================
+          # PHASE 2: BUILD ADAA CLIENT (USER)
+          # ==========================================
+          Pop-Location # Back to root
           
-          Write-Host "--- Re-building Flutter (Client Mode) ---"
+          Write-Host "--- [2/2] Re-compiling Flutter for Client Mode ---"
           flutter build windows --release --dart-define=IS_CLIENT_MODE=true
-          Pop-Location
           
-          Copy-Item flutter/build/windows/x64/runner/Release/adaa_client.exe -Destination rustdesk/Adaa-Client.exe
-          
+          # FIX: The output is ALWAYS rustdesk.exe by default, so we copy THAT to our target name
+          Write-Host "Copying flutter output to portable folder..."
+          Copy-Item flutter/build/windows/x64/runner/Release/rustdesk.exe -Destination rustdesk/Adaa-Client.exe -Force
+
           Push-Location ./libs/portable
-          Write-Host "--- Generating Client Version Assets ---"
+          
+          Write-Host "--- Generating Adaa-Client Assets ---"
           python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Client.exe
-          
-          Write-Host "--- Building Packer (Client) ---"
-          # Clean previous build to ensure new data.bin is embedded
-          cargo clean -p rustdesk-portable-packer
-          cargo build --release --bin rustdesk-portable-packer --target-dir $AbsForceOutput
-          
-          Write-Host "--- Moving Client Version ---"
-          if (Test-Path $sourcePath) {
-              Write-Host "Found packer at: $sourcePath"
-              Move-Item -Path $sourcePath -Destination ../../SignOutput/Adaa-Client-Portable.exe -Force
+
+          Write-Host "--- Building Packer for Adaa-Client ---"
+          # Clean previous build to force new data embedding
+          Remove-Item -Path ./FORCE_BUILD -Recurse -Force
+          cargo build --release --bin rustdesk-portable-packer --target-dir ./FORCE_BUILD
+
+          $clientPath = "./FORCE_BUILD/release/rustdesk-portable-packer.exe"
+          if (Test-Path $clientPath) {
+              Write-Host "SUCCESS: Found Client Build at $clientPath"
+              Move-Item -Path $clientPath -Destination ../../SignOutput/Adaa-Client-Portable.exe -Force
           } else {
-              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe at $sourcePath"
+              Write-Error "CRITICAL: Adaa-Client build failed to appear in FORCE_BUILD"
               exit 1
           }
+          
           Pop-Location
 
       # 2. رفع الملف الواحد فقط بدلاً من المجلد الكامل
