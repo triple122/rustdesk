@@ -226,8 +226,10 @@ jobs:
         shell: powershell
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
-          # Ensure output directory exists
+          # Ensure output directories exist
           New-Item -ItemType Directory -Force -Path ./SignOutput
+          New-Item -ItemType Directory -Force -Path ./FORCE_OUTPUT
+          $AbsForceOutput = (Resolve-Path ./FORCE_OUTPUT).Path
 
           # Fix manifest (remove dpiAware)
           (Get-Content res/manifest.xml) -notmatch 'dpiAware' | Set-Content res/manifest.xml
@@ -240,15 +242,18 @@ jobs:
           python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Full.exe
           
           Write-Host "--- Building Packer (Full) ---"
-          cargo build --release --bin rustdesk-portable-packer
+          # Force output to workspace root/FORCE_OUTPUT
+          cargo build --release --bin rustdesk-portable-packer --target-dir $AbsForceOutput
           
           Write-Host "--- Moving Full Version ---"
-          $exePath = Get-ChildItem -Path ../../target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
-          if ($exePath) {
-              Write-Host "Found packer at: $exePath"
-              Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Full-Portable.exe -Force
+          $sourcePath = Join-Path $AbsForceOutput "release/rustdesk-portable-packer.exe"
+          
+          if (Test-Path $sourcePath) {
+              Write-Host "Found packer at: $sourcePath"
+              Move-Item -Path $sourcePath -Destination ../../SignOutput/Adaa-Full-Portable.exe -Force
           } else {
-              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe for Full build!"
+              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe at $sourcePath"
+              Get-ChildItem -Path $AbsForceOutput -Recurse
               exit 1
           }
 
@@ -269,15 +274,14 @@ jobs:
           Write-Host "--- Building Packer (Client) ---"
           # Clean previous build to ensure new data.bin is embedded
           cargo clean -p rustdesk-portable-packer
-          cargo build --release --bin rustdesk-portable-packer
+          cargo build --release --bin rustdesk-portable-packer --target-dir $AbsForceOutput
           
           Write-Host "--- Moving Client Version ---"
-          $exePath = Get-ChildItem -Path ../../target -Filter rustdesk-portable-packer.exe -Recurse | Select-Object -ExpandProperty FullName -First 1
-          if ($exePath) {
-              Write-Host "Found packer at: $exePath"
-              Move-Item -Path $exePath -Destination ./SignOutput/Adaa-Client-Portable.exe -Force
+          if (Test-Path $sourcePath) {
+              Write-Host "Found packer at: $sourcePath"
+              Move-Item -Path $sourcePath -Destination ../../SignOutput/Adaa-Client-Portable.exe -Force
           } else {
-              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe for Client build!"
+              Write-Error "CRITICAL: Could not find rustdesk-portable-packer.exe at $sourcePath"
               exit 1
           }
           Pop-Location
