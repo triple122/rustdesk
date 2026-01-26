@@ -266,7 +266,11 @@ jobs:
           Pop-Location # Back to root
           
           Write-Host "--- [2/2] Re-compiling Flutter for Client Mode ---"
+          
+          # Navigate to flutter directory where pubspec.yaml exists
+          Push-Location flutter
           flutter build windows --release --dart-define=IS_CLIENT_MODE=true
+          Pop-Location # Back to root
           
           # FIX: Find the actual executable (name depends on pubspec.yaml)
           Write-Host "=== Locating built executable ===" -ForegroundColor Cyan
