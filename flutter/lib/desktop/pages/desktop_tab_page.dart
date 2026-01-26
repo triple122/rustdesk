@@ -52,7 +52,8 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
         page: DesktopHomePage(
           key: const ValueKey(kTabLabelHomePage),
         )));
-    if (bind.isIncomingOnly()) {
+    // Client mode (Adaa Client Lite) or incoming-only mode
+    if (bind.isIncomingOnly() || kIsClientMode) {
       tabController.onSelected = (key) {
         if (key == kTabLabelHomePage) {
           windowManager.setSize(getIncomingOnlyHomeSize());
@@ -91,13 +92,15 @@ class _DesktopTabPageState extends State<DesktopTabPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Hide settings in client mode (Adaa Client Lite)
+    final hideSettings = bind.isIncomingOnly() || bind.isDisableSettings() || kIsClientMode;
     final tabWidget = Container(
         child: Scaffold(
             backgroundColor: Theme.of(context).colorScheme.background,
             body: DesktopTab(
               controller: tabController,
               tail: Offstage(
-                offstage: bind.isIncomingOnly() || bind.isDisableSettings(),
+                offstage: hideSettings,
                 child: ActionIcon(
                   message: 'Settings',
                   icon: IconFont.menu,

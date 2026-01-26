@@ -60,16 +60,19 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget build(BuildContext context) {
     super.build(context);
     final isIncomingOnly = bind.isIncomingOnly();
+    // In client mode (Adaa Client Lite), hide the right pane (connection features)
+    final hideRightPane = isIncomingOnly || kIsClientMode;
     return _buildBlock(
         child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildLeftPane(context),
-        if (!isIncomingOnly) const VerticalDivider(width: 1),
-        if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
+        if (!hideRightPane) const VerticalDivider(width: 1),
+        if (!hideRightPane) Expanded(child: buildRightPane(context)),
       ],
     ));
   }
+
 
   Widget _buildBlock({required Widget child}) {
     return buildRemoteBlock(
@@ -79,6 +82,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   Widget buildLeftPane(BuildContext context) {
     final isIncomingOnly = bind.isIncomingOnly();
     final isOutgoingOnly = bind.isOutgoingOnly();
+    // Client mode (Adaa Client Lite) behaves like incoming-only
+    final isClientLiteMode = kIsClientMode || isIncomingOnly;
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
       if (bind.isCustomClient())
@@ -98,7 +103,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
         builder: (_, data) {
           if (data.hasData) {
-            if (isIncomingOnly) {
+            if (isClientLiteMode) {
               if (isInHomePage()) {
                 Future.delayed(Duration(milliseconds: 300), () {
                   _updateWindowSize();
@@ -113,7 +118,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ),
       buildPluginEntry(),
     ];
-    if (isIncomingOnly) {
+    if (isClientLiteMode) {
       children.addAll([
         Divider(),
         OnlineStatusWidget(
@@ -131,7 +136,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
+        width: isClientLiteMode ? 280.0 : 200.0,
         color: Theme.of(context).colorScheme.background,
         child: Stack(
           children: [
@@ -399,7 +404,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         children: [
           Column(
             children: [
-              if (!isOutgoingOnly && !kIsClientMode)
+              if (!isOutgoingOnly)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(

@@ -88,12 +88,17 @@ jobs:
           # هذا السطر يضمن أن الأيقونة في شريط العنوان تتغير
           cp res/icon.ico flutter/windows/runner/resources/app_icon.ico
           
-          # 3. Force App Name Update
-
-
-
+          # 3. Copy Logo to Flutter assets for branding display
+          cp res/logo.png flutter/assets/logo.png 2>/dev/null || echo "logo.png not found in res/, checking if it exists elsewhere..."
+          ls -la flutter/assets/ || true
+          
+          # 4. Verify branding files
+          echo "Checking branding files:"
+          ls -la res/*.png res/*.ico 2>/dev/null || true
+          
           echo "Injection Completed Successfully!"
       # --- نهاية تعديل Adaa.store ---
+
 
       - name: Restore bridge files
         uses: actions/download-artifact@master
