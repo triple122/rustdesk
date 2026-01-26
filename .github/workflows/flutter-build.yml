@@ -172,6 +172,14 @@ jobs:
           
           # Rename Executable to match branding (Inside the folder)
           mv ./rustdesk/rustdesk.exe ./rustdesk/Adaa-Full.exe
+          
+          # Verify the file was created successfully
+          if (-not (Test-Path ./rustdesk/Adaa-Full.exe)) {
+              Write-Error "CRITICAL: Adaa-Full.exe was not created by rename operation"
+              Get-ChildItem ./rustdesk/*.exe | Format-Table
+              exit 1
+          }
+          Write-Host "SUCCESS: Adaa-Full.exe created" -ForegroundColor Green
 
           Invoke-WebRequest -Uri https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip -OutFile usbmmidd_v2.zip
           Expand-Archive usbmmidd_v2.zip -DestinationPath .
@@ -260,9 +268,29 @@ jobs:
           Write-Host "--- [2/2] Re-compiling Flutter for Client Mode ---"
           flutter build windows --release --dart-define=IS_CLIENT_MODE=true
           
-          # FIX: The output is ALWAYS rustdesk.exe by default, so we copy THAT to our target name
-          Write-Host "Copying flutter output to portable folder..."
-          Copy-Item flutter/build/windows/x64/runner/Release/rustdesk.exe -Destination rustdesk/Adaa-Client.exe -Force
+          # FIX: Find the actual executable (name depends on pubspec.yaml)
+          Write-Host "=== Locating built executable ===" -ForegroundColor Cyan
+          Write-Host "Directory listing of Release folder:"
+          Get-ChildItem flutter/build/windows/x64/runner/Release/ | Format-Table Name, Length, LastWriteTime
+          
+          $clientExe = Get-ChildItem flutter/build/windows/x64/runner/Release/*.exe -Exclude *.vshost.exe | Select-Object -First 1
+          
+          if (-not $clientExe) {
+              Write-Error "CRITICAL: No executable found after Flutter build"
+              Write-Host "Full directory contents:" -ForegroundColor Red
+              Get-ChildItem flutter/build/windows/x64/runner/Release/ | Format-Table
+              exit 1
+          }
+          
+          Write-Host "Found executable: $($clientExe.Name)" -ForegroundColor Green
+          Write-Host "Copying to rustdesk/Adaa-Client.exe..."
+          Copy-Item $clientExe.FullName -Destination rustdesk/Adaa-Client.exe -Force
+          
+          if (-not (Test-Path rustdesk/Adaa-Client.exe)) {
+              Write-Error "CRITICAL: Failed to copy Adaa-Client.exe"
+              exit 1
+          }
+          Write-Host "SUCCESS: Adaa-Client.exe created" -ForegroundColor Green
 
           Push-Location ./libs/portable
           
