@@ -33,7 +33,8 @@ class DesktopHomePage extends StatefulWidget {
   State<DesktopHomePage> createState() => _DesktopHomePageState();
 }
 
-const borderColor = Color(0xFF2F65BA);
+// Adaa.store Green Theme border color
+const borderColor = Color(0xFF508D4E);
 
 class _DesktopHomePageState extends State<DesktopHomePage>
     with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
@@ -86,7 +87,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     final isClientLiteMode = kIsClientMode || isIncomingOnly;
     final children = <Widget>[
       if (!isOutgoingOnly) buildPresetPasswordWarning(),
-      if (bind.isCustomClient())
+      // Show "Powered by" in custom client mode OR client lite mode
+      if (bind.isCustomClient() || kIsClientMode)
         Align(
           alignment: Alignment.center,
           child: loadPowered(context),
@@ -120,6 +122,30 @@ class _DesktopHomePageState extends State<DesktopHomePage>
     ];
     if (isClientLiteMode) {
       children.addAll([
+        // Quit button for client lite mode
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onPressed: () {
+                windowManager.close();
+              },
+              child: Text(
+                translate("Quit"),
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        ),
         Divider(),
         OnlineStatusWidget(
           onSvcStatusChanged: () {

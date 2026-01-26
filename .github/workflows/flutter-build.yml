@@ -84,15 +84,21 @@ jobs:
           sed -i 's|rs-ny.rustdesk.com|31.6.50.93|g' libs/hbb_common/src/config.rs
           sed -i 's|OeVuKk5n1HiXp+APNn0Y3pC1Iwppm44JGqrQCsWqmBw=|lQyeQY9+vZBJWTMkXke0QgqhXo8BeshSilbhuLk0QDE=|g' libs/hbb_common/src/config.rs
           
-          # 2. Force Icon Update (مهم جداً: نسخ الأيقونة لمجلدات Flutter)
+          # 2. Change App Name from RustDesk to Adaa Client
+          echo "Changing app name to Adaa Client..."
+          sed -i 's/RustDesk/Adaa Client/g' libs/hbb_common/src/config.rs
+          # Also update any lowercase references
+          sed -i 's/rustdesk/adaa-client/g' libs/hbb_common/src/config.rs
+          
+          # 3. Force Icon Update (مهم جداً: نسخ الأيقونة لمجلدات Flutter)
           # هذا السطر يضمن أن الأيقونة في شريط العنوان تتغير
           cp res/icon.ico flutter/windows/runner/resources/app_icon.ico
           
-          # 3. Copy Logo to Flutter assets for branding display
+          # 4. Copy Logo to Flutter assets for branding display
           cp res/logo.png flutter/assets/logo.png 2>/dev/null || echo "logo.png not found in res/, checking if it exists elsewhere..."
           ls -la flutter/assets/ || true
           
-          # 4. Verify branding files
+          # 5. Verify branding files
           echo "Checking branding files:"
           ls -la res/*.png res/*.ico 2>/dev/null || true
           
@@ -272,43 +278,52 @@ jobs:
           
           Write-Host "--- [2/2] Re-compiling Flutter for Client Mode ---"
           
-          # Navigate to flutter directory where pubspec.yaml exists
+          # Save a backup of the full version rustdesk folder
+          Copy-Item -Path rustdesk -Destination rustdesk-full -Recurse -Force
+          
+          # Clean flutter build cache to force complete rebuild
           Push-Location flutter
+          flutter clean
+          flutter pub get
           flutter build windows --release --dart-define=IS_CLIENT_MODE=true
           Pop-Location # Back to root
           
-          # FIX: Find the actual executable (name depends on pubspec.yaml)
-          Write-Host "=== Locating built executable ===" -ForegroundColor Cyan
-          Write-Host "Directory listing of Release folder:"
-          Get-ChildItem flutter/build/windows/x64/runner/Release/ | Format-Table Name, Length, LastWriteTime
+          # Create client version folder with all DLLs from full version
+          New-Item -ItemType Directory -Force -Path ./rustdesk-client
           
+          # Copy all DLLs and supporting files from full version
+          Copy-Item -Path rustdesk-full/*.dll -Destination rustdesk-client/ -Force
+          Copy-Item -Path rustdesk-full/data -Destination rustdesk-client/ -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path rustdesk-full/usbmmidd_v2 -Destination rustdesk-client/ -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path rustdesk-full/drivers -Destination rustdesk-client/ -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path rustdesk-full/RustDeskTempTopMostWindow.exe -Destination rustdesk-client/ -Force -ErrorAction SilentlyContinue
+          
+          # Copy the new client executable
           $clientExe = Get-ChildItem flutter/build/windows/x64/runner/Release/*.exe -Exclude *.vshost.exe | Select-Object -First 1
           
           if (-not $clientExe) {
               Write-Error "CRITICAL: No executable found after Flutter build"
-              Write-Host "Full directory contents:" -ForegroundColor Red
               Get-ChildItem flutter/build/windows/x64/runner/Release/ | Format-Table
               exit 1
           }
           
           Write-Host "Found executable: $($clientExe.Name)" -ForegroundColor Green
-          Write-Host "Copying to rustdesk/Adaa-Client.exe..."
-          Copy-Item $clientExe.FullName -Destination rustdesk/Adaa-Client.exe -Force
+          Copy-Item $clientExe.FullName -Destination rustdesk-client/Adaa-Client.exe -Force
           
-          if (-not (Test-Path rustdesk/Adaa-Client.exe)) {
-              Write-Error "CRITICAL: Failed to copy Adaa-Client.exe"
-              exit 1
-          }
-          Write-Host "SUCCESS: Adaa-Client.exe created" -ForegroundColor Green
+          # Also copy any new DLLs from the client build 
+          Copy-Item -Path flutter/build/windows/x64/runner/Release/*.dll -Destination rustdesk-client/ -Force -ErrorAction SilentlyContinue
+          
+          Write-Host "=== Client folder contents ===" -ForegroundColor Cyan
+          Get-ChildItem rustdesk-client/ | Format-Table Name, Length
 
           Push-Location ./libs/portable
           
           Write-Host "--- Generating Adaa-Client Assets ---"
-          python ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/Adaa-Client.exe
+          python ./generate.py -f ../../rustdesk-client/ -o . -e ../../rustdesk-client/Adaa-Client.exe
 
           Write-Host "--- Building Packer for Adaa-Client ---"
           # Clean previous build to force new data embedding
-          Remove-Item -Path ./FORCE_BUILD -Recurse -Force
+          Remove-Item -Path ./FORCE_BUILD -Recurse -Force -ErrorAction SilentlyContinue
           cargo build --release --bin rustdesk-portable-packer --target-dir ./FORCE_BUILD
 
           $clientPath = "./FORCE_BUILD/release/rustdesk-portable-packer.exe"
