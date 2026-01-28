@@ -281,11 +281,21 @@ jobs:
           # Save a backup of the full version rustdesk folder
           Copy-Item -Path rustdesk -Destination rustdesk-full -Recurse -Force
           
+          # IMPORTANT: Directly modify consts.dart to enable client mode
+          # This is more reliable than --dart-define
+          Write-Host "Enabling kIsClientMode in source code..." -ForegroundColor Yellow
+          $constsFile = "flutter/lib/consts.dart"
+          (Get-Content $constsFile) -replace "const bool kIsClientMode = bool\.fromEnvironment\('IS_CLIENT_MODE', defaultValue: false\);", "const bool kIsClientMode = true; // Adaa Client Lite Mode - FORCED ON" | Set-Content $constsFile
+          
+          # Verify the change was made
+          Write-Host "Verifying kIsClientMode change:"
+          Select-String -Path $constsFile -Pattern "kIsClientMode"
+          
           # Clean flutter build cache to force complete rebuild
           Push-Location flutter
           flutter clean
           flutter pub get
-          flutter build windows --release --dart-define=IS_CLIENT_MODE=true
+          flutter build windows --release
           Pop-Location # Back to root
           
           # Create client version folder with all DLLs from full version
