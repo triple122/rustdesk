@@ -378,10 +378,20 @@ class MyTheme {
     // https://stackoverflow.com/questions/77537315/after-upgrading-to-flutter-3-16-the-app-bar-background-color-button-size-and
     useMaterial3: false,
     brightness: Brightness.light,
+    primaryColor: MyTheme.accent, // Force Green
+    colorScheme: ColorScheme.light(
+      primary: MyTheme.accent,
+      secondary: MyTheme.accent,
+      surface: Colors.white,
+      background: Colors.white,
+    ),
     hoverColor: Color.fromARGB(255, 224, 224, 224),
     scaffoldBackgroundColor: Colors.white,
     dialogBackgroundColor: Colors.white,
     appBarTheme: AppBarTheme(
+      backgroundColor: Colors.white,
+      iconTheme: IconThemeData(color: Colors.black87),
+      titleTextStyle: TextStyle(color: Colors.black87, fontSize: 20),
       shadowColor: Colors.transparent,
     ),
     dialogTheme: DialogTheme(
@@ -485,6 +495,13 @@ class MyTheme {
   static ThemeData darkTheme = ThemeData(
     useMaterial3: false,
     brightness: Brightness.dark,
+    primaryColor: MyTheme.accent, // Force Green
+    colorScheme: ColorScheme.dark(
+      primary: MyTheme.accent,
+      secondary: MyTheme.accent,
+      surface: Color(0xFF18191E),
+      background: Color(0xFF18191E),
+    ),
     hoverColor: Color.fromARGB(255, 45, 46, 53),
     scaffoldBackgroundColor: Color(0xFF18191E),
     dialogBackgroundColor: Color(0xFF18191E),

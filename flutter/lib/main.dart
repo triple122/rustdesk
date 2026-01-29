@@ -25,6 +25,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'common.dart';
 import 'consts.dart';
+import 'desktop/pages/client_home_page.dart'; // Import ClientHomePage
 import 'mobile/pages/home_page.dart';
 import 'mobile/pages/server_page.dart';
 import 'models/platform_model.dart';
@@ -514,7 +515,7 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           darkTheme: MyTheme.darkTheme,
           themeMode: MyTheme.currentThemeMode(),
           home: isDesktop
-              ? const DesktopTabPage()
+              ? (kIsClientMode ? const ClientHomePage() : const DesktopTabPage())
               : isWeb
                   ? WebHomePage()
                   : HomePage(),
